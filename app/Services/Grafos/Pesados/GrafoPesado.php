@@ -37,7 +37,7 @@ class GrafoPesado
         foreach ($this->listaDeVertices as $i => $verticeEnTurno) {
             // Asumiendo que el tipo T implementa un método de comparación o se puede comparar directamente.
             // En Java usa compareTo, que para tipos escalares en PHP es <=>
-            if ($verticeEnTurno === $unVertice) { // Comparación estricta para simplificar (o usar un método compareTo si es un objeto)
+            if ($verticeEnTurno->id == $unVertice->id) {// Comparación estricta para simplificar (o usar un método compareTo si es un objeto)
                 return $i;
             }
         }
@@ -95,18 +95,19 @@ class GrafoPesado
      * @return array<mixed>
      */
     public function getAdyacentesDeVertices($unVertice): array
-    {
-        $this->validarVertice($unVertice);
-        $posDelVertice = $this->getPosicionDeVertice($unVertice);
-        /** @var array<AdyacenteConPeso> $adyacentesDelVertice */
-        $adyacentesDelVertice = $this->listaDeAdyacencias[$posDelVertice];
+{
+    $this->validarVertice($unVertice);
+    $posDelVertice = $this->getPosicionDeVertice($unVertice);
+    /** @var array<AdyacenteConPeso> $adyacentesDelVertice */
+    $adyacentesDelVertice = $this->listaDeAdyacencias[$posDelVertice];
 
-        $listaDeVerticesAdyacentes = [];
-        foreach ($adyacentesDelVertice as $adyacenteConPeso) {
-            $listaDeVerticesAdyacentes[] = $this->listaDeVertices[$adyacenteConPeso->getIndiceVertice()];
-        }
-        return $listaDeVerticesAdyacentes;
+    $listaDeVerticesAdyacentes = [];
+    foreach ($adyacentesDelVertice as $adyacenteConPeso) {
+        // Asegúrate de que esto devuelva el VÉRTICE, no el AdyacenteConPeso
+        $listaDeVerticesAdyacentes[] = $this->listaDeVertices[$adyacenteConPeso->getIndiceVertice()];
     }
+    return $listaDeVerticesAdyacentes;
+}
 
     /**
      * @param mixed $verticeOrigen
@@ -255,30 +256,41 @@ class GrafoPesado
      * @return float
      * @throws ExcepcionAristaNoExiste
      */
-    public function getPeso($verticeOrigen, $verticeDestino): float
-    {
-        $this->validarVertice($verticeDestino);
-        $this->validarVertice($verticeOrigen);
-        if (!$this->existeAdyacencia($verticeOrigen, $verticeDestino)) {
-            throw new ExcepcionAristaNoExiste();
-        }
-
-        $posDeVerticeOrigen = $this->getPosicionDeVertice($verticeOrigen);
-        $posDeVerticeDestino = $this->getPosicionDeVertice($verticeDestino);
-
-        /** @var array<AdyacenteConPeso> $adyacentesDelOrigen */
-        $adyacentesDelOrigen = $this->listaDeAdyacencias[$posDeVerticeOrigen];
-        $adyacenciaDestinoBuscada = new AdyacenteConPeso($posDeVerticeDestino);
-
-        foreach ($adyacentesDelOrigen as $adyacente) {
-            if ($adyacente->equals($adyacenciaDestinoBuscada)) {
-                return $adyacente->getPeso();
-            }
-        }
-
-        // Esto no debería pasar si existeAdyacencia devolvió true
+   public function getPeso($verticeOrigen, $verticeDestino): float
+{
+    \Log::debug('getPeso llamado:', [
+        'origen' => $verticeOrigen->id ?? 'N/A',
+        'destino' => $verticeDestino->id ?? 'N/A'
+    ]);
+    
+    $this->validarVertice($verticeDestino);
+    $this->validarVertice($verticeOrigen);
+    if (!$this->existeAdyacencia($verticeOrigen, $verticeDestino)) {
         throw new ExcepcionAristaNoExiste();
     }
+
+    $posDeVerticeOrigen = $this->getPosicionDeVertice($verticeOrigen);
+    $posDeVerticeDestino = $this->getPosicionDeVertice($verticeDestino);
+
+    $adyacentesDelOrigen = $this->listaDeAdyacencias[$posDeVerticeOrigen];
+    $adyacenciaDestinoBuscada = new AdyacenteConPeso($posDeVerticeDestino);
+
+    foreach ($adyacentesDelOrigen as $adyacente) {
+        if ($adyacente->equals($adyacenciaDestinoBuscada)) {
+            $peso = $adyacente->getPeso();
+            
+            \Log::debug('Peso encontrado:', [
+                'tipo' => gettype($peso),
+                'valor' => $peso,
+                'es_float' => is_float($peso)
+            ]);
+            
+            return (float) $peso; // Forzar conversión a float
+        }
+    }
+
+    throw new ExcepcionAristaNoExiste();
+}
 
     /**
      * Función auxiliar para remover un AdyacenteConPeso de un array.

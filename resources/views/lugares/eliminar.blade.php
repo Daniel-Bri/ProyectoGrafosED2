@@ -9,17 +9,23 @@
     <h4>¿Estás seguro de que quieres eliminar este lugar?</h4>
     <p><strong>Nombre:</strong> {{ $lugar->nombre }}</p>
     <p><strong>Descripción:</strong> {{ $lugar->descripcion ?? 'N/A' }}</p>
-    <p><strong>Categoría:</strong> {{ $lugar->categoria->nombre }}</p>
+    <p><strong>Categoría:</strong> {{ $lugar->categoria_nombre ?? 'N/A' }}</p>
     
-    @if($lugar->caminosOrigen->count() > 0 || $lugar->caminosDestino->count() > 0)
+    <?php
+        $caminosOrigen = DB::table('caminos')->where('lugar_origen_id', $lugar->id)->count();
+        $caminosDestino = DB::table('caminos')->where('lugar_destino_id', $lugar->id)->count();
+        $totalCaminos = $caminosOrigen + $caminosDestino;
+    ?>
+    
+    @if($totalCaminos > 0)
         <div class="alert alert-warning mt-3">
-            <strong>¡Advertencia!</strong> Este lugar tiene {{ $lugar->caminosOrigen->count() + $lugar->caminosDestino->count() }} caminos conectados. 
+            <strong>¡Advertencia!</strong> Este lugar tiene {{ $totalCaminos }} caminos conectados. 
             Al eliminar el lugar, también se eliminarán todos sus caminos.
         </div>
     @endif
 </div>
 
-<form action="{{ route('lugares.destroy', $lugar) }}" method="POST">
+<form action="{{ route('lugares.destroy', $lugar->id) }}" method="POST"> {{-- CAMBIADO: usar $lugar->id --}}
     @csrf
     @method('DELETE')
     <button type="submit" class="btn btn-danger">Sí, Eliminar</button>

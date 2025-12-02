@@ -73,24 +73,24 @@
                             </span>
                         </td>
                         <td>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ route('lugares.show', $lugar->id) }}" 
-                                   class="btn btn-info" 
-                                   title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('lugares.edit', $lugar->id) }}" 
-                                   class="btn btn-warning" 
-                                   title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{{ route('lugares.eliminar', $lugar->id) }}" 
-                                   class="btn btn-danger" 
-                                   title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
+    <div class="btn-group btn-group-sm" role="group">
+        <a href="{{ route('lugares.show', $lugar->id) }}" 
+           class="btn btn-info" 
+           title="Ver detalles">
+            <i class="fas fa-eye"></i>
+        </a>
+        <a href="{{ route('lugares.edit', $lugar->id) }}" 
+           class="btn btn-warning" 
+           title="Editar">
+            <i class="fas fa-edit"></i>
+        </a>
+        <a href="{{ route('lugares.eliminar', $lugar->id) }}"  {{-- Asegurar que es $lugar->id --}}
+           class="btn btn-danger" 
+           title="Eliminar">
+            <i class="fas fa-trash"></i>
+        </a>
+    </div>
+</td>
                     </tr>
                     @endforeach
                 </tbody>

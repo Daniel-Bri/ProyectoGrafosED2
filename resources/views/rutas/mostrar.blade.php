@@ -5,6 +5,8 @@
     <h1 class="h2">Ruta Calculada</h1>
 </div>
 
+
+
 @if(isset($ruta) && $ruta)
 <div class="card">
     <div class="card-header bg-success text-white">
@@ -45,24 +47,6 @@
                 </div>
             </div>
             
-            <div class="col-md-6">
-                <h6>Mapa de la Ruta</h6>
-                <div class="map-container border rounded p-3 text-center">
-                    <img src="{{ asset('images/uagrm.jpg') }}" alt="Mapa UAGRM" class="img-fluid" style="max-height: 400px;">
-                    <div class="mt-3">
-                        <small class="text-muted">La ruta se mostraría resaltada en el mapa aquí</small>
-                    </div>
-                </div>
-                
-                <div class="mt-3">
-                    <button class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-download me-1"></i>Exportar Ruta
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-print me-1"></i>Imprimir
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
     <div class="card-footer">

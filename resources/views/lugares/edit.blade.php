@@ -5,7 +5,7 @@
     <h1 class="h2">Editar Lugar: {{ $lugar->nombre }}</h1>
 </div>
 
-<form action="{{ route('lugares.update', $lugar) }}" method="POST">
+<form action="{{ route('lugares.update', $lugar->id) }}" method="POST"> {{-- CAMBIADO: usar $lugar->id --}}
     @csrf
     @method('PUT')
     <div class="mb-3">
@@ -15,7 +15,7 @@
     
     <div class="mb-3">
         <label for="descripcion" class="form-label">Descripción</label>
-        <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ $lugar->descripcion }}</textarea>
+        <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ $lugar->descripcion ?? '' }}</textarea>
     </div>
     
     <div class="row">

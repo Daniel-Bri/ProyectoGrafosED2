@@ -2,30 +2,28 @@
 
 namespace App\Services\Grafos\Pesados;
 
-use SplPriorityQueue; // Necesario para la cola de prioridad
+use SplPriorityQueue;
 
 class Dijkstra
 {
     /** @var GrafoPesado */
     protected $grafo;
-    /** @var array<mixed, float> */
+    /** @var array<int, float> */
     protected $distancias;
-    /** @var array<mixed, mixed|null> */
+    /** @var array<int, int|null> */  // Cambiado: almacena POSICIONES, no objetos
     protected $predecesores;
+    /** @var int */
+    protected $posInicial;
     /** @var mixed */
     protected $verticeInicial;
     
-    // Necesitamos una constante que represente el infinito
     protected const INFINITO = PHP_FLOAT_MAX;
 
-    /**
-     * @param GrafoPesado $grafo
-     * @param mixed $verticeInicial
-     */
     public function __construct(GrafoPesado $grafo, $verticeInicial)
     {
         $this->grafo = $grafo;
         $this->verticeInicial = $verticeInicial;
+        $this->posInicial = $grafo->getPosicionDeVertice($verticeInicial);
         $this->distancias = [];
         $this->predecesores = [];
         $this->ejecutarAlgoritmoDijkstra();
@@ -33,101 +31,92 @@ class Dijkstra
 
     protected function ejecutarAlgoritmoDijkstra(): void
     {
-        $this->grafo->validarVertice($this->verticeInicial);
-        $vertices = $this->grafo->getVertices();
+        $n = $this->grafo->cantidadDeVertices();
         
-        // 1. Inicializar distancias y predecesores
-        foreach ($vertices as $vertice) {
-            // Usamos el objeto Lugar (vértice) como clave en el array, si es un objeto con ID, 
-            // sino, podríamos usar el ID del lugar para la clave del array.
-            // Para simplificar, usaremos el ID del lugar (asumiendo que $vertice es un objeto Lugar con ID)
-            $idVertice = $vertice->id; 
-            
-            $this->distancias[$idVertice] = self::INFINITO;
-            $this->predecesores[$idVertice] = null;
+        // 1. Inicializar distancias y predecesores con POSICIONES
+        for ($i = 0; $i < $n; $i++) {
+            $this->distancias[$i] = self::INFINITO;
+            $this->predecesores[$i] = null; // null significa sin predecesor
         }
 
-        $idInicial = $this->verticeInicial->id;
-        $this->distancias[$idInicial] = 0.0;
+        $this->distancias[$this->posInicial] = 0.0;
         
-        // 2. Usar cola de prioridad (Priority Queue)
+        // 2. Usar cola de prioridad
         $colaPrioridad = new SplPriorityQueue();
+        $colaPrioridad->setExtractFlags(SplPriorityQueue::EXTR_DATA);
         
-        // La cola de prioridad de PHP es "max-heap" por defecto (los más grandes tienen mayor prioridad).
-        // Dijkstra necesita "min-heap" (los más pequeños tienen mayor prioridad). 
-        // Usamos la distancia negativa como prioridad para simular min-heap.
-        // El formato de SplPriorityQueue es insert($valor, $prioridad)
-        $colaPrioridad->insert($this->verticeInicial, 0.0); // Prioridad: -0.0
+        // Insertar POSICIÓN del vértice inicial
+        $colaPrioridad->insert($this->posInicial, 0.0);
 
         while (!$colaPrioridad->isEmpty()) {
-            /** @var Lugar $verticeActual */
-            $verticeActual = $colaPrioridad->extract();
-            $idActual = $verticeActual->id;
-
-            // En SplPriorityQueue, el valor que se extrae no tiene el costo asociado.
-            // Verificamos si ya encontramos una ruta más corta (necesario por el funcionamiento de la cola de PHP)
-            if ($this->distancias[$idActual] < $colaPrioridad->current()) {
-                 continue; // Ya procesamos este vértice con un costo menor
-            }
-
+            $posActual = $colaPrioridad->extract();
+            
+            // Obtener el vértice actual desde su posición
+            $verticeActual = $this->grafo->getVerticePorPosicion($posActual);
             $adyacentes = $this->grafo->getAdyacentesDeVertices($verticeActual);
 
             foreach ($adyacentes as $adyacente) {
-                $idAdyacente = $adyacente->id;
+                $posAdyacente = $this->grafo->getPosicionDeVertice($adyacente);
                 $peso = $this->grafo->getPeso($verticeActual, $adyacente);
                 
-                $nuevaDistancia = $this->distancias[$idActual] + $peso;
+                $nuevaDistancia = $this->distancias[$posActual] + $peso;
 
-                if ($nuevaDistancia < $this->distancias[$idAdyacente]) {
-                    // Relajación: hemos encontrado un camino más corto
-                    $this->distancias[$idAdyacente] = $nuevaDistancia;
-                    $this->predecesores[$idAdyacente] = $verticeActual;
+                if ($nuevaDistancia < $this->distancias[$posAdyacente]) {
+                    // Relajación - almacenar POSICIÓN del predecesor
+                    $this->distancias[$posAdyacente] = $nuevaDistancia;
+                    $this->predecesores[$posAdyacente] = $posActual; // Almacenar posición, no objeto
                     
-                    // Reinsertar en la cola con la nueva (menor) prioridad (distancia)
-                    // Usamos la distancia negativa para simular min-heap
-                    $colaPrioridad->insert($adyacente, -$nuevaDistancia); 
+                    // Insertar POSICIÓN en la cola
+                    $colaPrioridad->insert($posAdyacente, -$nuevaDistancia);
                 }
             }
         }
     }
 
-    /**
-     * Reconstruye el camino más corto al destino.
-     * @param mixed $verticeDestino
-     * @return array{'ruta': array<mixed>, 'costo': float}
-     */
     public function getCaminoMasCorto($verticeDestino): array
     {
-        $this->grafo->validarVertice($verticeDestino);
-        $idDestino = $verticeDestino->id;
-        
-        $ruta = [];
-        $costo = $this->distancias[$idDestino] ?? self::INFINITO;
+        $posDestino = $this->grafo->getPosicionDeVertice($verticeDestino);
+        $costo = $this->distancias[$posDestino] ?? self::INFINITO;
 
-        if ($costo === self::INFINITO) {
+        if ($costo >= self::INFINITO - 1) {
             return ['ruta' => [], 'costo' => $costo];
         }
 
-        $vertice = $verticeDestino;
-        while ($vertice !== null) {
-            // Agregar al inicio de la ruta
-            array_unshift($ruta, $vertice);
+        // Reconstruir ruta usando POSICIONES
+        $rutaPosiciones = [];
+        $posActual = $posDestino;
+        
+        while ($posActual !== null) {
+            array_unshift($rutaPosiciones, $posActual);
+            $posActual = $this->predecesores[$posActual];
             
-            // Obtener el predecesor (por ID)
-            $vertice = $this->predecesores[$vertice->id] ?? null;
-            
-            // Si el predecesor es el inicial, se detiene después de agregarlo
-            if ($vertice === $this->verticeInicial) {
-                array_unshift($ruta, $this->verticeInicial);
-                break; 
+            // Si llegamos al inicio, salir
+            if ($posActual === $this->posInicial) {
+                array_unshift($rutaPosiciones, $posActual);
+                break;
             }
         }
         
-        // La ruta debe comenzar con el verticeInicial, si no es así, algo salió mal
-        if (empty($ruta) || $ruta[0]->id !== $this->verticeInicial->id) {
-            return ['ruta' => [], 'costo' => self::INFINITO];
+        // Asegurar que el inicio esté incluido
+        if (empty($rutaPosiciones) || $rutaPosiciones[0] !== $this->posInicial) {
+            array_unshift($rutaPosiciones, $this->posInicial);
+        }
+
+        // Convertir posiciones a vértices
+        $ruta = [];
+        foreach ($rutaPosiciones as $pos) {
+            $ruta[] = $this->grafo->getVerticePorPosicion($pos);
         }
 
         return ['ruta' => $ruta, 'costo' => $costo];
+    }
+
+    /**
+     * Obtiene la distancia más corta a un vértice
+     */
+    public function getDistancia($vertice): float
+    {
+        $pos = $this->grafo->getPosicionDeVertice($vertice);
+        return $this->distancias[$pos] ?? self::INFINITO;
     }
 }

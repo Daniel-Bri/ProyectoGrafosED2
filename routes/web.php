@@ -49,3 +49,53 @@ Route::get('/api/mapa/datos', function () {
         'caminos' => $caminos
     ]);
 })->name('api.mapa.datos');
+
+
+Route::get('/test/dijkstra', function() {
+    try {
+        \Log::info('=== TEST DIJKSTRA MANUAL ===');
+        
+        // Crear grafo simple de prueba
+        $grafo = new \App\Services\Grafos\Pesados\GrafoPesado();
+        
+        // Crear 3 lugares de prueba
+        $lugar1 = (object)['id' => 1, 'nombre' => 'A', 'x' => 0, 'y' => 0];
+        $lugar2 = (object)['id' => 2, 'nombre' => 'B', 'x' => 10, 'y' => 0];
+        $lugar3 = (object)['id' => 3, 'nombre' => 'C', 'x' => 20, 'y' => 0];
+        
+        \Log::info('Insertando vértices...');
+        $grafo->insertarVertice($lugar1);
+        $grafo->insertarVertice($lugar2);
+        $grafo->insertarVertice($lugar3);
+        
+        \Log::info('Insertando aristas...');
+        $grafo->insertarArista($lugar1, $lugar2, 10.0);
+        $grafo->insertarArista($lugar2, $lugar3, 20.0);
+        
+        \Log::info('Creando Dijkstra...');
+        $dijkstra = new \App\Services\Grafos\Pesados\Dijkstra($grafo, $lugar1);
+        
+        \Log::info('Calculando ruta A->C...');
+        $resultado = $dijkstra->getCaminoMasCorto($lugar3);
+        
+        return response()->json([
+            'success' => true,
+            'grafo_vertices' => count($grafo->getVertices()),
+            'distancia' => $resultado['costo'],
+            'ruta' => array_map(function($l) { return $l->nombre; }, $resultado['ruta']),
+            'ruta_ids' => array_map(function($l) { return $l->id; }, $resultado['ruta'])
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('ERROR en test Dijkstra:', [
+            'mensaje' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
